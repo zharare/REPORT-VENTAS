@@ -13,6 +13,7 @@ import {
   saveUiPreferences,
 } from '@/lib/storage';
 import { getDayFromDate, getMonthFromDate } from '@/lib/utils';
+import { supabase } from '../lib/supabase';
 
 const buildDefaultState = (): CRMState => ({
   tabs: DEFAULT_TABS,
@@ -42,16 +43,19 @@ const persistTabs = (tabs: SalesTab[], activeTabId: string) => saveTabsConfig(ta
 export const useCrmStore = create<Store>((set, get) => ({
   ...buildDefaultState(),
   hydrated: false,
+
   hydrateFromStorage: () => {
     const { tabs, activeTabId } = loadTabsConfig();
     const tableData = loadTableData(tabs);
     const ui = loadUiPreferences();
     set({ tabs, activeTabId, tableData, ui, hydrated: true });
   },
+
   setActiveTab: (tabId) => {
     set({ activeTabId: tabId });
     persistTabs(get().tabs, tabId);
   },
+
   addTab: () =>
     set((state) => {
       const tabId = crypto.randomUUID();
@@ -61,6 +65,7 @@ export const useCrmStore = create<Store>((set, get) => ({
         color: TAB_COLORS[state.tabs.length % TAB_COLORS.length],
       };
       const rows = Array.from({ length: 50 }, () => createEmptyRow());
+
       saveTableDataForTab(tabId, rows);
       persistTabs([...state.tabs, newTab], tabId);
 
@@ -73,37 +78,59 @@ export const useCrmStore = create<Store>((set, get) => ({
         },
       };
     }),
+
   renameTab: (tabId, name) =>
     set((state) => {
-      const tabs = state.tabs.map((tab) => (tab.id === tabId ? { ...tab, name: name.trim() || tab.name } : tab));
+      const tabs = state.tabs.map((tab) =>
+        tab.id === tabId ? { ...tab, name: name.trim() || tab.name } : tab
+      );
       persistTabs(tabs, state.activeTabId);
       return { tabs };
     }),
+
   reorderTabs: (tabs) => {
     set({ tabs });
     persistTabs(tabs, get().activeTabId);
   },
+
   updateTabColor: (tabId, color) =>
     set((state) => {
-      const tabs = state.tabs.map((tab) => (tab.id === tabId ? { ...tab, color } : tab));
+      const tabs = state.tabs.map((tab) =>
+        tab.id === tabId ? { ...tab, color } : tab
+      );
       persistTabs(tabs, state.activeTabId);
       return { tabs };
     }),
+
   deleteTab: (tabId) =>
     set((state) => {
       if (state.tabs.length === 1) return state;
+
       const tabs = state.tabs.filter((tab) => tab.id !== tabId);
       const tableData = { ...state.tableData };
       delete tableData[tabId];
+
       removeTableDataForTab(tabId);
-      const activeTabId = state.activeTabId === tabId ? tabs[0].id : state.activeTabId;
+
+      const activeTabId =
+        state.activeTabId === tabId ? tabs[0].id : state.activeTabId;
+
       persistTabs(tabs, activeTabId);
+
       return { tabs, activeTabId, tableData };
     }),
+
   addRow: (tabId) =>
     set((state) => {
       const nextRows = [...(state.tableData[tabId] ?? []), createEmptyRow()];
       saveTableDataForTab(tabId, nextRows);
+
+      // 🔥 guardar en Supabase
+      supabase.from('sales').upsert({
+        tab: tabId,
+        data: nextRows,
+      });
+
       return {
         tableData: {
           ...state.tableData,
@@ -111,10 +138,21 @@ export const useCrmStore = create<Store>((set, get) => ({
         },
       };
     }),
+
   deleteRow: (tabId, rowId) =>
     set((state) => {
-      const nextRows = (state.tableData[tabId] ?? []).filter((row) => row.id !== rowId);
+      const nextRows = (state.tableData[tabId] ?? []).filter(
+        (row) => row.id !== rowId
+      );
+
       saveTableDataForTab(tabId, nextRows);
+
+      
+      supabase.from('sales').upsert({
+        tab: tabId,
+        data: nextRows,
+      });
+
       return {
         tableData: {
           ...state.tableData,
@@ -122,18 +160,30 @@ export const useCrmStore = create<Store>((set, get) => ({
         },
       };
     }),
+
   updateCell: (tabId, rowId, field, value) =>
     set((state) => {
       const nextRows = (state.tableData[tabId] ?? []).map((row) => {
         if (row.id !== rowId) return row;
+
         const nextRow = { ...row, [field]: value };
+
         if (field === 'fecha') {
           nextRow.mes = getMonthFromDate(value);
           nextRow.dia = getDayFromDate(value);
         }
+
         return nextRow;
       });
+
       saveTableDataForTab(tabId, nextRows);
+
+      // 🔥 Supabase
+      supabase.from('sales').upsert({
+        tab: tabId,
+        data: nextRows,
+      });
+
       return {
         tableData: {
           ...state.tableData,
@@ -141,17 +191,24 @@ export const useCrmStore = create<Store>((set, get) => ({
         },
       };
     }),
+
   toggleDarkMode: () =>
     set((state) => {
       const ui = { darkMode: !state.ui.darkMode };
       saveUiPreferences(ui);
       return { ui };
     }),
+
   resetStore: () => {
     const defaults = buildDefaultState();
     persistTabs(defaults.tabs, defaults.activeTabId);
-    defaults.tabs.forEach((tab) => saveTableDataForTab(tab.id, defaults.tableData[tab.id]));
+
+    defaults.tabs.forEach((tab) =>
+      saveTableDataForTab(tab.id, defaults.tableData[tab.id])
+    );
+
     saveUiPreferences(defaults.ui);
+
     set({ ...defaults, hydrated: true });
   },
 }));
