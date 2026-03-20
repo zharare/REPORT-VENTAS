@@ -58,7 +58,16 @@ export const DashboardShell = () => {
         const formatted: Record<string, any[]> = {};
 
         data.forEach((item) => {
-          formatted[item.tab] = item.data;
+          const grouped: Record<string, any[]> = {};
+
+data.forEach((row) => {
+  if (!grouped[row.tab_id]) grouped[row.tab_id] = [];
+  grouped[row.tab_id].push(row);
+});
+
+useCrmStore.setState({
+  tableData: grouped,
+});
         });
 
         useCrmStore.setState({

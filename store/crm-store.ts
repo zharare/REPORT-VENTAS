@@ -121,76 +121,70 @@ export const useCrmStore = create<Store>((set, get) => ({
     }),
 
   addRow: (tabId) =>
-    set((state) => {
-      const nextRows = [...(state.tableData[tabId] ?? []), createEmptyRow()];
-      saveTableDataForTab(tabId, nextRows);
+  set((state) => {
+    const newRow = createEmptyRow();
+    const nextRows = [...(state.tableData[tabId] ?? []), newRow];
 
-      // 🔥 guardar en Supabase
-      supabase.from('sales').upsert({
-        tab: tabId,
-        data: nextRows,
-      });
+    // 🔥 insertar fila nueva
+    supabase.from('sales').insert({
+  ...newRow,
+  tab_id: tabId,
+});
 
-      return {
-        tableData: {
-          ...state.tableData,
-          [tabId]: nextRows,
-        },
-      };
-    }),
+    return {
+      tableData: {
+        ...state.tableData,
+        [tabId]: nextRows,
+      },
+    };
+  }),
 
   deleteRow: (tabId, rowId) =>
-    set((state) => {
-      const nextRows = (state.tableData[tabId] ?? []).filter(
-        (row) => row.id !== rowId
-      );
+  set((state) => {
+    const nextRows = (state.tableData[tabId] ?? []).filter(
+      (row) => row.id !== rowId
+    );
 
-      saveTableDataForTab(tabId, nextRows);
+    // 🔥 borrar en Supabase
+    supabase.from('sales').delete().eq('id', rowId);
 
-      
+    return {
+      tableData: {
+        ...state.tableData,
+        [tabId]: nextRows,
+      },
+    };
+  }),
+
+  updateCell: async (tabId, rowId, field, value) => {
+  set((state) => {
+    const nextRows = (state.tableData[tabId] ?? []).map((row) => {
+      if (row.id !== rowId) return row;
+
+      const updatedRow = { ...row, [field]: value };
+
+      if (field === 'fecha') {
+        updatedRow.mes = getMonthFromDate(value);
+        updatedRow.dia = getDayFromDate(value);
+      }
+
+      // 🔥 guardar SOLO ESA FILA
       supabase.from('sales').upsert({
-        tab: tabId,
-        data: nextRows,
-      });
+  ...updatedRow,
+  tab_id: tabId,
+});
 
-      return {
-        tableData: {
-          ...state.tableData,
-          [tabId]: nextRows,
-        },
-      };
-    }),
+      return updatedRow;
+    });
 
-  updateCell: (tabId, rowId, field, value) =>
-    set((state) => {
-      const nextRows = (state.tableData[tabId] ?? []).map((row) => {
-        if (row.id !== rowId) return row;
-
-        const nextRow = { ...row, [field]: value };
-
-        if (field === 'fecha') {
-          nextRow.mes = getMonthFromDate(value);
-          nextRow.dia = getDayFromDate(value);
-        }
-
-        return nextRow;
-      });
-
-      saveTableDataForTab(tabId, nextRows);
-
-      // 🔥 Supabase
-      supabase.from('sales').upsert({
-        tab: tabId,
-        data: nextRows,
-      });
-
-      return {
-        tableData: {
-          ...state.tableData,
-          [tabId]: nextRows,
-        },
-      };
-    }),
+    return {
+      tableData: {
+        ...state.tableData,
+        [tabId]: nextRows,
+      },
+    };
+  });
+},
 
   toggleDarkMode: () =>
     set((state) => {
