@@ -1,4 +1,4 @@
-import { SalesRow, SalesTab } from '@/lib/types';
+import { SalesRow, SalesTab, TableColumn } from '@/lib/types';
 
 export const TAB_COLORS = ['#403F6F', '#FF8000', '#16A34A', '#0EA5E9', '#DB2777', '#7C3AED'];
 
@@ -29,7 +29,7 @@ export const MONTH_OPTIONS = [
 export const FACTURADO_OPTIONS = ['', 'Sí', 'No'] as const;
 export const PAGO_CREDITO_OPTIONS = ['', 'Contado', 'Crédito', 'Pendiente'] as const;
 
-export const TABLE_COLUMNS = [
+export const TABLE_COLUMNS: TableColumn[] = [
   { key: 'cod', label: 'COD', type: 'text' },
   { key: 'cliente', label: 'CLIENTE', type: 'text' },
   { key: 'contacto', label: 'CONTACTO', type: 'text' },
@@ -45,7 +45,7 @@ export const TABLE_COLUMNS = [
   { key: 'numeroFactura', label: 'N° FACTURA', type: 'text' },
   { key: 'emisionCertificadosFisico', label: 'EMISIÓN CERTIFICADOS FISICO', type: 'text' },
   { key: 'pagoCredito', label: 'PAGO y CRÉDITO', type: 'payment' },
-] as const;
+];
 
 export const STORAGE_KEY = 'consitec-crm-pro-store';
 

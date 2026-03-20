@@ -51,3 +51,12 @@ export type FilterState = {
   year: string;
   search: string;
 };
+
+export type ColumnType = 'text' | 'number' | 'date' | 'select' | 'month' | 'payment';
+
+export type TableColumn = {
+  key: keyof SalesRow;
+  label: string;
+  type: ColumnType;
+  readOnly?: boolean;
+};
