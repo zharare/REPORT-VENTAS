@@ -120,72 +120,87 @@ export const useCrmStore = create<Store>((set, get) => ({
       return { tabs, activeTabId, tableData };
     }),
 
-  addRow: (tabId) =>
-  set((state) => {
-    const newRow = createEmptyRow();
-    const nextRows = [...(state.tableData[tabId] ?? []), newRow];
+  addRow: (tabId) => {
+  const state = get();
 
-    // 🔥 insertar fila nueva
-    supabase.from('sales').insert({
-  ...newRow,
-  tab_id: tabId,
-});
+  const newRow = createEmptyRow();
+  const nextRows = [...(state.tableData[tabId] ?? []), newRow];
 
-    return {
-      tableData: {
-        ...state.tableData,
-        [tabId]: nextRows,
-      },
-    };
-  }),
-
-  deleteRow: (tabId, rowId) =>
-  set((state) => {
-    const nextRows = (state.tableData[tabId] ?? []).filter(
-      (row) => row.id !== rowId
-    );
-
-    // 🔥 borrar en Supabase
-    supabase.from('sales').delete().eq('id', rowId);
-
-    return {
-      tableData: {
-        ...state.tableData,
-        [tabId]: nextRows,
-      },
-    };
-  }),
-
-  updateCell: async (tabId, rowId, field, value) => {
-  set((state) => {
-    const nextRows = (state.tableData[tabId] ?? []).map((row) => {
-      if (row.id !== rowId) return row;
-
-      const updatedRow = { ...row, [field]: value };
-
-      if (field === 'fecha') {
-        updatedRow.mes = getMonthFromDate(value);
-        updatedRow.dia = getDayFromDate(value);
-      }
-
-      // 🔥 guardar SOLO ESA FILA
-      supabase.from('sales').upsert({
-  ...updatedRow,
-  tab_id: tabId,
-});
-
-      return updatedRow;
-    });
-
-    return {
-      tableData: {
-        ...state.tableData,
-        [tabId]: nextRows,
-      },
-    };
+  // ✅ actualizar UI primero
+  set({
+    tableData: {
+      ...state.tableData,
+      [tabId]: nextRows,
+    },
   });
+
+  // 🔥 luego guardar en Supabase
+  supabase.from('sales').upsert(
+    {
+      id: tabId,
+      tab: tabId,
+      data: nextRows,
+    },
+    { onConflict: 'id' }
+  );
 },
 
+  deleteRow: (tabId, rowId) => {
+  const state = get();
+
+  const nextRows = (state.tableData[tabId] ?? []).filter(
+    (row) => row.id !== rowId
+  );
+
+  set({
+    tableData: {
+      ...state.tableData,
+      [tabId]: nextRows,
+    },
+  });
+
+  supabase.from('sales').upsert(
+    {
+      id: tabId,
+      tab: tabId,
+      data: nextRows,
+    },
+    { onConflict: 'id' }
+  );
+},
+
+  updateCell: (tabId, rowId, field, value) => {
+  const state = get();
+
+  const nextRows = (state.tableData[tabId] ?? []).map((row) => {
+    if (row.id !== rowId) return row;
+
+    const updatedRow = { ...row, [field]: value };
+
+    if (field === 'fecha') {
+      updatedRow.mes = getMonthFromDate(value);
+      updatedRow.dia = getDayFromDate(value);
+    }
+
+    return updatedRow;
+  });
+
+  set({
+    tableData: {
+      ...state.tableData,
+      [tabId]: nextRows,
+    },
+  });
+
+  supabase.from('sales').upsert(
+    {
+      id: tabId,
+      tab: tabId,
+      data: nextRows,
+    },
+    { onConflict: 'id' }
+  );
+},
   toggleDarkMode: () =>
     set((state) => {
       const ui = { darkMode: !state.ui.darkMode };

@@ -46,40 +46,31 @@ export const DashboardShell = () => {
 
   // 🔥 carga desde Supabase
   useEffect(() => {
-    const loadFromSupabase = async () => {
-      const { data, error } = await supabase.from('sales').select('*');
+  const loadFromSupabase = async () => {
+    const { data, error } = await supabase.from('sales').select('*');
 
-      if (error) {
-        console.log('❌ Error:', error);
-        return;
-      }
+    if (error) {
+      console.log('❌ Error:', error);
+      return;
+    }
 
-      if (data && data.length > 0) {
-        const formatted: Record<string, any[]> = {};
+    if (data) {
+      const formatted: Record<string, any[]> = {};
 
-        data.forEach((item) => {
-          const grouped: Record<string, any[]> = {};
-
-data.forEach((row) => {
-  if (!grouped[row.tab_id]) grouped[row.tab_id] = [];
-  grouped[row.tab_id].push(row);
+data.forEach((item) => {
+  formatted[item.tab] = item.data;
 });
 
 useCrmStore.setState({
-  tableData: grouped,
+  tableData: formatted,
 });
-        });
 
-        useCrmStore.setState({
-          tableData: formatted,
-        });
+      console.log('🔥 Datos cargados:', formatted);
+    }
+  };
 
-        console.log('🔥 Datos cargados desde Supabase');
-      }
-    };
-
-    loadFromSupabase();
-  }, []);
+  loadFromSupabase();
+}, []);
 
   const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0];
   const activeRows = activeTab ? tableData[activeTab.id] ?? [] : [];
