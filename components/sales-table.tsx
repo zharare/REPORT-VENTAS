@@ -80,12 +80,17 @@ export const SalesTable = ({
                         </select>
                       ) : (
                         <input
-                          type={column.type === 'number' ? 'number' : column.type === 'date' ? 'date' : 'text'}
-                          value={value}
-                          readOnly={Boolean(column.readOnly)}
-                          onChange={(event) => onCellChange(activeTabId, row.id, column.key as keyof SalesRow, event.target.value)}
-                          className={cn(inputBaseClass, column.readOnly && 'cursor-not-allowed bg-slate-100 text-slate-500')}
-                        />
+  type={column.type === 'number' ? 'number' : column.type === 'date' ? 'date' : 'text'}
+  value={value}
+  readOnly={'readOnly' in column && column.readOnly === true}
+  onChange={(event) =>
+    onCellChange(activeTabId, row.id, column.key as keyof SalesRow, event.target.value)
+  }
+  className={cn(
+    inputBaseClass,
+    'readOnly' in column && column.readOnly && 'cursor-not-allowed bg-slate-100 text-slate-500'
+  )}
+/>
                       )}
                     </td>
                   );
