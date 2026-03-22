@@ -37,39 +37,48 @@ export const DashboardShell = () => {
     deleteRow,
   } = useCrmStore();
 
-  // 🔥 CARGA INTELIGENTE (SUPABASE PRIMERO)
+  // ✅ 1. HIDRATAR LOCAL (SIEMPRE)
   useEffect(() => {
-    const init = async () => {
+    if (mounted && !hydrated) {
+      hydrateFromStorage();
+    }
+  }, [mounted, hydrated, hydrateFromStorage]);
+
+  // ✅ 2. CARGAR DESDE SUPABASE (SIN store extra)
+  useEffect(() => {
+    const loadFromSupabase = async () => {
       const { data, error } = await supabase.from('sales').select('*');
 
-      // ✅ 1. SI HAY DATOS EN SUPABASE → USARLOS
-      if (!error && data && data.length > 0) {
-        const formatted: Record<string, any[]> = {};
-
-        data.forEach((item) => {
-          formatted[item.tab] = item.data;
-        });
-
-        useCrmStore.setState({
-          tableData: formatted,
-          hydrated: true,
-        });
-
-        console.log('🔥 Supabase OK');
+      if (error) {
+        console.log('❌ Supabase error:', error);
         return;
       }
 
-      // ⚠️ 2. FALLBACK → LOCAL STORAGE
-      console.log('⚠️ usando localStorage');
-      hydrateFromStorage();
+      if (!data || data.length === 0) {
+        console.log('⚠️ sin datos en Supabase');
+        return;
+      }
+
+      const grouped: Record<string, any[]> = {};
+
+      data.forEach((item) => {
+        if (!grouped[item.tab]) grouped[item.tab] = [];
+        grouped[item.tab].push(item.data);
+      });
+
+      useCrmStore.setState({
+        tableData: grouped,
+      });
+
+      console.log('🔥 Supabase sincronizado');
     };
 
-    if (mounted) {
-      init();
+    if (mounted && hydrated) {
+      loadFromSupabase();
     }
-  }, [mounted, hydrateFromStorage]);
+  }, [mounted, hydrated]);
 
-  // 🛡 PROTECCIÓN
+  // 🛡 protección
   const activeTab =
     tabs.find((tab) => tab.id === activeTabId) || tabs[0] || null;
 
@@ -95,7 +104,7 @@ export const DashboardShell = () => {
     [tabs, tableData]
   );
 
-  // 🧱 BLOQUEO SEGURO
+  // 🧱 bloqueo seguro
   if (!mounted || !hydrated || !activeTab) {
     return <div className="min-h-screen bg-surface" />;
   }

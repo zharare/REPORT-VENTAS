@@ -25,6 +25,7 @@ const buildDefaultState = (): CRMState => ({
 type Store = CRMState & {
   hydrated: boolean;
   hydrateFromStorage: () => void;
+  
   setActiveTab: (tabId: string) => void;
   addTab: () => void;
   renameTab: (tabId: string, name: string) => void;
@@ -122,13 +123,15 @@ export const useCrmStore = create<Store>((set, get) => ({
 
   addRow: (tabId) =>
   set((state) => {
-    const nextRows = [...(state.tableData[tabId] ?? []), createEmptyRow()];
+    const newRow = createEmptyRow();
 
-    saveTableDataForTab(tabId, nextRows);
+    const nextRows = [...(state.tableData[tabId] ?? []), newRow];
 
-      supabase.from('sales').upsert({
+    // 🔥 guardar UNA fila
+    supabase.from('sales').insert({
+      id: newRow.id,
       tab: tabId,
-      data: nextRows,
+      data: newRow,
     });
 
     return {
@@ -145,12 +148,7 @@ export const useCrmStore = create<Store>((set, get) => ({
       (row) => row.id !== rowId
     );
 
-    saveTableDataForTab(tabId, nextRows);
-
-    supabase.from('sales').upsert({
-      tab: tabId,
-      data: nextRows,
-    });
+    supabase.from('sales').delete().eq('id', rowId);
 
     return {
       tableData: {
@@ -172,14 +170,12 @@ export const useCrmStore = create<Store>((set, get) => ({
         updated.dia = getDayFromDate(value);
       }
 
+      // 🔥 actualizar SOLO esa fila
+      supabase.from('sales').update({
+        data: updated,
+      }).eq('id', rowId);
+
       return updated;
-    });
-
-    saveTableDataForTab(tabId, nextRows);
-
-    supabase.from('sales').upsert({
-      tab: tabId,
-      data: nextRows,
     });
 
     return {
