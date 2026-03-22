@@ -1,13 +1,14 @@
 import { SalesRow, SalesTab, TableColumn } from '@/lib/types';
 
-export const TAB_COLORS = ['#403F6F', '#FF8000', '#16A34A', '#0EA5E9', '#DB2777', '#7C3AED'];
+export const TAB_COLORS = ['#403F6F', '#FF8000', '#56065ba4', '#0EA5E9', '#DB2777', '#13c690'];
 
 export const DEFAULT_TABS: SalesTab[] = [
   { id: 'abigail', name: 'ABIGAIL', color: '#403F6F' },
   { id: 'mayerly', name: 'MAYERLY', color: '#FF8000' },
-  { id: 'cristhian', name: 'CRISTHIAN', color: '#16A34A' },
+  { id: 'cristhian', name: 'CRISTHIAN', color: '#56065ba4' },
   { id: 'ingrid', name: 'INGRID', color: '#0EA5E9' },
   { id: 'fiorella', name: 'FIORELLA', color: '#DB2777' },
+  { id: 'valeria', name: 'VALERIA', color: '#13c690' },
 ];
 
 export const MONTH_OPTIONS = [
