@@ -50,11 +50,13 @@ export const formatCurrency = (value: number) =>
   currencyFormatter.format(value);
 
 // 🔥 ESTE ERA EL ERROR DE .trim()
-export const rowMatchesQuery = (row: SalesRow, query?: string) => {
-  const normalized = (query || '').trim().toLowerCase();
+export const rowMatchesQuery = (row: SalesRow, query: string) => {
+  if (!query) return true;
+
+  const normalized = String(query).trim().toLowerCase();
   if (!normalized) return true;
 
-  return Object.values(row).some((value) => {
+  return Object.values(row ?? {}).some((value) => {
     if (value === null || value === undefined) return false;
     return String(value).toLowerCase().includes(normalized);
   });
