@@ -3,27 +3,47 @@ import { SalesRow } from '@/lib/types';
 const monthFormatter = new Intl.DateTimeFormat('es-PE', { month: 'long' });
 const dayFormatter = new Intl.DateTimeFormat('es-PE', { weekday: 'long' });
 
-export const cn = (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(' ');
+export const cn = (...classes: Array<string | false | null | undefined>) =>
+  classes.filter(Boolean).join(' ');
 
-export const getMonthFromDate = (value: string) => {
-  if (!value) return '';
+// 🔥 SAFE DATE PARSER
+const safeDate = (value?: string) => {
+  if (!value) return null;
+
   const date = new Date(`${value}T00:00:00`);
+  return isNaN(date.getTime()) ? null : date;
+};
+
+// ✅ MES
+export const getMonthFromDate = (value?: string) => {
+  const date = safeDate(value);
+  if (!date) return '';
   return monthFormatter.format(date).toUpperCase();
 };
 
-export const getDayFromDate = (value: string) => {
-  if (!value) return '';
-  const date = new Date(`${value}T00:00:00`);
+// ✅ DÍA
+export const getDayFromDate = (value?: string) => {
+  const date = safeDate(value);
+  if (!date) return '';
   return dayFormatter.format(date).toUpperCase();
 };
 
-export const getYearFromDate = (value: string) => {
-  if (!value) return '';
-  return new Date(`${value}T00:00:00`).getFullYear().toString();
+// ✅ AÑO
+export const getYearFromDate = (value?: string) => {
+  const date = safeDate(value);
+  if (!date) return '';
+  return date.getFullYear().toString();
 };
 
-export const parseCurrency = (value: string) => {
-  const sanitized = value.replace(/[^\d.,-]/g, '').replace(',', '.');
+// 🔥 PARSE CURRENCY SEGURO
+export const parseCurrency = (value?: string) => {
+  if (!value) return 0;
+
+  const sanitized = value
+    .toString()
+    .replace(/[^\d.,-]/g, '')
+    .replace(',', '.');
+
   const parsed = Number.parseFloat(sanitized);
   return Number.isFinite(parsed) ? parsed : 0;
 };
@@ -34,11 +54,19 @@ export const currencyFormatter = new Intl.NumberFormat('es-PE', {
   maximumFractionDigits: 2,
 });
 
-export const formatCurrency = (value: number) => currencyFormatter.format(value);
+export const formatCurrency = (value: number) =>
+  currencyFormatter.format(value ?? 0);
 
+// 🔥 BÚSQUEDA SEGURA (AQUÍ ESTABA TU CRASH)
 export const rowMatchesQuery = (row: SalesRow, query: string) => {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return true;
+  if (!query) return true;
 
-  return Object.values(row).some((value) => String(value).toLowerCase().includes(normalized));
+  const normalized = query.toLowerCase();
+
+  const safeString = (val: unknown) =>
+    (val ?? '').toString().toLowerCase();
+
+  return Object.values(row).some((value) =>
+    safeString(value).includes(normalized)
+  );
 };
