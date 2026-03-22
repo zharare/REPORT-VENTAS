@@ -30,7 +30,7 @@ export const MONTH_OPTIONS = [
 export const FACTURADO_OPTIONS = ['', 'Sí', 'No'] as const;
 export const PAGO_CREDITO_OPTIONS = ['', 'Contado', 'Crédito', 'Pendiente'] as const;
 
-export const TABLE_COLUMNS: TableColumn[] = [
+export const TABLE_COLUMNS = [
   { key: 'cod', label: 'COD', type: 'text' },
   { key: 'cliente', label: 'CLIENTE', type: 'text' },
   { key: 'contacto', label: 'CONTACTO', type: 'text' },
@@ -46,7 +46,7 @@ export const TABLE_COLUMNS: TableColumn[] = [
   { key: 'numeroFactura', label: 'N° FACTURA', type: 'text' },
   { key: 'emisionCertificadosFisico', label: 'EMISIÓN CERTIFICADOS FISICO', type: 'text' },
   { key: 'pagoCredito', label: 'PAGO y CRÉDITO', type: 'payment' },
-];
+] satisfies TableColumn[];
 
 export const STORAGE_KEY = 'consitec-crm-pro-store';
 
