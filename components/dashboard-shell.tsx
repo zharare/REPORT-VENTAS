@@ -61,10 +61,20 @@ export const DashboardShell = () => {
 
       const grouped: Record<string, any[]> = {};
 
-      data.forEach((item) => {
-        if (!grouped[item.tab]) grouped[item.tab] = [];
-        grouped[item.tab].push(item.data);
-      });
+data.forEach((item) => {
+  if (!grouped[item.tab]) {
+    grouped[item.tab] = [];
+  }
+
+  // 🔥 si es array → expandir
+  if (Array.isArray(item.data)) {
+    grouped[item.tab].push(...item.data);
+  } 
+  // 🔥 si es objeto → agregar
+  else if (item.data) {
+    grouped[item.tab].push(item.data);
+  }
+});
 
       useCrmStore.setState({
         tableData: grouped,
@@ -89,8 +99,8 @@ export const DashboardShell = () => {
       activeRows.filter((row) => {
         const matchesMonth = filters.month ? row.mes === filters.month : true;
         const matchesYear = filters.year
-          ? getYearFromDate(row.fecha) === filters.year
-          : true;
+  ? getYearFromDate(row.fecha || '') === filters.year
+  : true;
         const matchesSearch = rowMatchesQuery(row, filters.search);
         return matchesMonth && matchesYear && matchesSearch;
       }),

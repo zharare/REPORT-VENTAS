@@ -6,41 +6,33 @@ const dayFormatter = new Intl.DateTimeFormat('es-PE', { weekday: 'long' });
 export const cn = (...classes: Array<string | false | null | undefined>) =>
   classes.filter(Boolean).join(' ');
 
-// 🔥 SAFE DATE PARSER
-const safeDate = (value?: string) => {
-  if (!value) return null;
-
-  const date = new Date(`${value}T00:00:00`);
-  return isNaN(date.getTime()) ? null : date;
-};
-
-// ✅ MES
+// 🔥 SEGURIDAD TOTAL EN FECHAS
 export const getMonthFromDate = (value?: string) => {
-  const date = safeDate(value);
-  if (!date) return '';
+  if (!value) return '';
+  const date = new Date(`${value}T00:00:00`);
+  if (isNaN(date.getTime())) return '';
   return monthFormatter.format(date).toUpperCase();
 };
 
-// ✅ DÍA
 export const getDayFromDate = (value?: string) => {
-  const date = safeDate(value);
-  if (!date) return '';
+  if (!value) return '';
+  const date = new Date(`${value}T00:00:00`);
+  if (isNaN(date.getTime())) return '';
   return dayFormatter.format(date).toUpperCase();
 };
 
-// ✅ AÑO
 export const getYearFromDate = (value?: string) => {
-  const date = safeDate(value);
-  if (!date) return '';
+  if (!value) return '';
+  const date = new Date(`${value}T00:00:00`);
+  if (isNaN(date.getTime())) return '';
   return date.getFullYear().toString();
 };
 
-// 🔥 PARSE CURRENCY SEGURO
-export const parseCurrency = (value?: string) => {
+// 🔥 AQUÍ ESTABA UNO DE LOS CRASH
+export const parseCurrency = (value?: string | null) => {
   if (!value) return 0;
 
-  const sanitized = value
-    .toString()
+  const sanitized = String(value)
     .replace(/[^\d.,-]/g, '')
     .replace(',', '.');
 
@@ -55,18 +47,15 @@ export const currencyFormatter = new Intl.NumberFormat('es-PE', {
 });
 
 export const formatCurrency = (value: number) =>
-  currencyFormatter.format(value ?? 0);
+  currencyFormatter.format(value);
 
-// 🔥 BÚSQUEDA SEGURA (AQUÍ ESTABA TU CRASH)
-export const rowMatchesQuery = (row: SalesRow, query: string) => {
-  if (!query) return true;
+// 🔥 ESTE ERA EL ERROR DE .trim()
+export const rowMatchesQuery = (row: SalesRow, query?: string) => {
+  const normalized = (query || '').trim().toLowerCase();
+  if (!normalized) return true;
 
-  const normalized = query.toLowerCase();
-
-  const safeString = (val: unknown) =>
-    (val ?? '').toString().toLowerCase();
-
-  return Object.values(row).some((value) =>
-    safeString(value).includes(normalized)
-  );
+  return Object.values(row).some((value) => {
+    if (value === null || value === undefined) return false;
+    return String(value).toLowerCase().includes(normalized);
+  });
 };
