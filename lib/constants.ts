@@ -4,8 +4,8 @@ export const TAB_COLORS = ['#403F6F', '#FF8000', '#16A34A', '#0EA5E9', '#DB2777'
 
 export const DEFAULT_TABS: SalesTab[] = [
   { id: 'abigail', name: 'ABIGAIL', color: '#403F6F' },
-  { id: 'mayerli', name: 'MAYERLI', color: '#FF8000' },
-  { id: 'crithian', name: 'CRITHIAN', color: '#16A34A' },
+  { id: 'mayerly', name: 'MAYERLY', color: '#FF8000' },
+  { id: 'cristhian', name: 'CRISTHIAN', color: '#16A34A' },
   { id: 'ingrid', name: 'INGRID', color: '#0EA5E9' },
   { id: 'fiorella', name: 'FIORELLA', color: '#DB2777' },
 ];
@@ -50,7 +50,7 @@ export const TABLE_COLUMNS: TableColumn[] = [
 export const STORAGE_KEY = 'consitec-crm-pro-store';
 
 export const createEmptyRow = (id?: string): SalesRow => ({
-  id: id ?? crypto.randomUUID(),
+  id: crypto.randomUUID(),
   cod: '',
   cliente: '',
   contacto: '',

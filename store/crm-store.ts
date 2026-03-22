@@ -122,42 +122,39 @@ export const useCrmStore = create<Store>((set, get) => ({
     }),
 
   addRow: async (tabId) => {
-  const newRow = createEmptyRow();
+  let nextRows: SalesRow[] = [];
 
-  const { data, error } = await supabase
+  set((state) => {
+    nextRows = [...(state.tableData[tabId] ?? []), createEmptyRow()];
+
+    return {
+      tableData: {
+        ...state.tableData,
+        [tabId]: nextRows,
+      },
+    };
+  });
+
+  const { error } = await supabase
     .from('sales')
-    .insert({
-      id: newRow.id,
-      tab: tabId,
-      data: newRow,
-    })
-    .select(); // 👈 IMPORTANTE
+    .upsert(
+      {
+        tab: tabId,
+        data: nextRows,
+      },
+      { onConflict: 'tab' }
+    );
 
-  console.log('INSERT RESULT:', { data, error });
-
-  if (error) return;
-
-  set((state) => ({
-    tableData: {
-      ...state.tableData,
-      [tabId]: [...(state.tableData[tabId] ?? []), newRow],
-    },
-  }));
+  if (error) {
+    console.log('❌ ERROR ADD:', error);
+  }
 },
 
   deleteRow: async (tabId, rowId) => {
-  const { error } = await supabase
-    .from('sales')
-    .delete()
-    .eq('id', rowId);
-
-  if (error) {
-    console.log('❌ ERROR DELETE:', error);
-    return;
-  }
+  let nextRows: SalesRow[] = [];
 
   set((state) => {
-    const nextRows = (state.tableData[tabId] ?? []).filter(
+    nextRows = (state.tableData[tabId] ?? []).filter(
       (row) => row.id !== rowId
     );
 
@@ -168,13 +165,27 @@ export const useCrmStore = create<Store>((set, get) => ({
       },
     };
   });
+
+  const { error } = await supabase
+    .from('sales')
+    .upsert(
+      {
+        tab: tabId,
+        data: nextRows,
+      },
+      { onConflict: 'tab' }
+    );
+
+  if (error) {
+    console.log('❌ ERROR DELETE:', error);
+  }
 },
   
   updateCell: async (tabId, rowId, field, value) => {
-  let updatedRow: SalesRow | null = null;
+  let nextRows: SalesRow[] = [];
 
   set((state) => {
-    const nextRows = (state.tableData[tabId] ?? []).map((row) => {
+    nextRows = (state.tableData[tabId] ?? []).map((row) => {
       if (row.id !== rowId) return row;
 
       const updated = { ...row, [field]: value };
@@ -184,7 +195,6 @@ export const useCrmStore = create<Store>((set, get) => ({
         updated.dia = getDayFromDate(value);
       }
 
-      updatedRow = updated;
       return updated;
     });
 
@@ -196,12 +206,16 @@ export const useCrmStore = create<Store>((set, get) => ({
     };
   });
 
-  if (!updatedRow) return;
-
+  // 🔥 guardar TODO el TAB (NO una fila)
   const { error } = await supabase
     .from('sales')
-    .update({ data: updatedRow })
-    .eq('id', rowId);
+    .upsert(
+      {
+        tab: tabId,
+        data: nextRows,
+      },
+      { onConflict: 'tab' }
+    );
 
   if (error) {
     console.log('❌ ERROR UPDATE:', error);
