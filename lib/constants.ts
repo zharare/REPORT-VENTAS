@@ -45,7 +45,7 @@ export const TABLE_COLUMNS = [
   { key: 'numeroFactura', label: 'N° FACTURA', type: 'text' },
   { key: 'emisionCertificadosFisico', label: 'EMISIÓN CERTIFICADOS FISICO', type: 'text' },
   { key: 'pagoCredito', label: 'PAGO y CRÉDITO', type: 'payment' },
-] as const;
+] as TableColumn[];
 
 export const STORAGE_KEY = 'consitec-crm-pro-store';
 
