@@ -32,9 +32,9 @@ type Store = CRMState & {
   reorderTabs: (tabs: SalesTab[]) => void;
   updateTabColor: (tabId: string, color: string) => void;
   deleteTab: (tabId: string) => void;
-  addRow: (tabId: string) => void;
-  deleteRow: (tabId: string, rowId: string) => void;
-  updateCell: (tabId: string, rowId: string, field: keyof SalesRow, value: string) => void;
+  addRow: (tabId: string) => Promise<void>;
+  deleteRow: (tabId: string, rowId: string) => Promise<void>;
+  updateCell: (tabId: string, rowId: string, field: keyof SalesRow, value: string) => Promise<void>;
   toggleDarkMode: () => void;
   resetStore: () => void;
 };
@@ -121,18 +121,26 @@ export const useCrmStore = create<Store>((set, get) => ({
       return { tabs, activeTabId, tableData };
     }),
 
-  addRow: (tabId) =>
+  addRow: async (tabId) => {
+  const newRow = createEmptyRow();
+
+  // 🔥 1. guardar en Supabase (async fuera de set)
+  const { error } = await supabase.from('sales').insert({
+    id: newRow.id,
+    tab: tabId,
+    data: newRow,
+  });
+
+  if (error) {
+    console.log('❌ ERROR INSERT:', error);
+    return;
+  }
+
+  console.log('✅ guardado en supabase');
+
+  // 🔥 2. actualizar estado local
   set((state) => {
-    const newRow = createEmptyRow();
-
     const nextRows = [...(state.tableData[tabId] ?? []), newRow];
-
-    // 🔥 guardar UNA fila
-    supabase.from('sales').insert({
-      id: newRow.id,
-      tab: tabId,
-      data: newRow,
-    });
 
     return {
       tableData: {
@@ -140,25 +148,37 @@ export const useCrmStore = create<Store>((set, get) => ({
         [tabId]: nextRows,
       },
     };
-  }),
+  });
+},
 
-  deleteRow: (tabId, rowId) =>
+  deleteRow: async (tabId, rowId) => {
+  const { error } = await supabase
+    .from('sales')
+    .delete()
+    .eq('id', rowId);
+
+  if (error) {
+    console.log('❌ ERROR DELETE:', error);
+    return;
+  }
+
   set((state) => {
     const nextRows = (state.tableData[tabId] ?? []).filter(
       (row) => row.id !== rowId
     );
 
-    supabase.from('sales').delete().eq('id', rowId);
-
     return {
       tableData: {
         ...state.tableData,
         [tabId]: nextRows,
       },
     };
-  }),
+  });
+},
   
-  updateCell: (tabId, rowId, field, value) =>
+  updateCell: async (tabId, rowId, field, value) => {
+  let updatedRow: SalesRow | null = null;
+
   set((state) => {
     const nextRows = (state.tableData[tabId] ?? []).map((row) => {
       if (row.id !== rowId) return row;
@@ -170,11 +190,7 @@ export const useCrmStore = create<Store>((set, get) => ({
         updated.dia = getDayFromDate(value);
       }
 
-      // 🔥 actualizar SOLO esa fila
-      supabase.from('sales').update({
-        data: updated,
-      }).eq('id', rowId);
-
+      updatedRow = updated;
       return updated;
     });
 
@@ -184,7 +200,19 @@ export const useCrmStore = create<Store>((set, get) => ({
         [tabId]: nextRows,
       },
     };
-  }),
+  });
+
+  if (!updatedRow) return;
+
+  const { error } = await supabase
+    .from('sales')
+    .update({ data: updatedRow })
+    .eq('id', rowId);
+
+  if (error) {
+    console.log('❌ ERROR UPDATE:', error);
+  }
+},
 
   toggleDarkMode: () =>
     set((state) => {
