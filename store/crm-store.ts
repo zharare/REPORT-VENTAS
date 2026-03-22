@@ -124,31 +124,25 @@ export const useCrmStore = create<Store>((set, get) => ({
   addRow: async (tabId) => {
   const newRow = createEmptyRow();
 
-  // 🔥 1. guardar en Supabase (async fuera de set)
-  const { error } = await supabase.from('sales').insert({
-    id: newRow.id,
-    tab: tabId,
-    data: newRow,
-  });
+  const { data, error } = await supabase
+    .from('sales')
+    .insert({
+      id: newRow.id,
+      tab: tabId,
+      data: newRow,
+    })
+    .select(); // 👈 IMPORTANTE
 
-  if (error) {
-    console.log('❌ ERROR INSERT:', error);
-    return;
-  }
+  console.log('INSERT RESULT:', { data, error });
 
-  console.log('✅ guardado en supabase');
+  if (error) return;
 
-  // 🔥 2. actualizar estado local
-  set((state) => {
-    const nextRows = [...(state.tableData[tabId] ?? []), newRow];
-
-    return {
-      tableData: {
-        ...state.tableData,
-        [tabId]: nextRows,
-      },
-    };
-  });
+  set((state) => ({
+    tableData: {
+      ...state.tableData,
+      [tabId]: [...(state.tableData[tabId] ?? []), newRow],
+    },
+  }));
 },
 
   deleteRow: async (tabId, rowId) => {
