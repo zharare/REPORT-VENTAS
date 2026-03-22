@@ -120,87 +120,76 @@ export const useCrmStore = create<Store>((set, get) => ({
       return { tabs, activeTabId, tableData };
     }),
 
-  addRow: (tabId) => {
-  const state = get();
+  addRow: (tabId) =>
+  set((state) => {
+    const nextRows = [...(state.tableData[tabId] ?? []), createEmptyRow()];
 
-  const newRow = createEmptyRow();
-  const nextRows = [...(state.tableData[tabId] ?? []), newRow];
+    saveTableDataForTab(tabId, nextRows);
 
-  // ✅ actualizar UI primero
-  set({
-    tableData: {
-      ...state.tableData,
-      [tabId]: nextRows,
-    },
-  });
-
-  // 🔥 luego guardar en Supabase
-  supabase.from('sales').upsert(
-    {
-      id: tabId,
+      supabase.from('sales').upsert({
       tab: tabId,
       data: nextRows,
-    },
-    { onConflict: 'id' }
-  );
-},
+    });
 
-  deleteRow: (tabId, rowId) => {
-  const state = get();
+    return {
+      tableData: {
+        ...state.tableData,
+        [tabId]: nextRows,
+      },
+    };
+  }),
 
-  const nextRows = (state.tableData[tabId] ?? []).filter(
-    (row) => row.id !== rowId
-  );
+  deleteRow: (tabId, rowId) =>
+  set((state) => {
+    const nextRows = (state.tableData[tabId] ?? []).filter(
+      (row) => row.id !== rowId
+    );
 
-  set({
-    tableData: {
-      ...state.tableData,
-      [tabId]: nextRows,
-    },
-  });
+    saveTableDataForTab(tabId, nextRows);
 
-  supabase.from('sales').upsert(
-    {
-      id: tabId,
+    supabase.from('sales').upsert({
       tab: tabId,
       data: nextRows,
-    },
-    { onConflict: 'id' }
-  );
-},
+    });
 
-  updateCell: (tabId, rowId, field, value) => {
-  const state = get();
+    return {
+      tableData: {
+        ...state.tableData,
+        [tabId]: nextRows,
+      },
+    };
+  }),
+  
+  updateCell: (tabId, rowId, field, value) =>
+  set((state) => {
+    const nextRows = (state.tableData[tabId] ?? []).map((row) => {
+      if (row.id !== rowId) return row;
 
-  const nextRows = (state.tableData[tabId] ?? []).map((row) => {
-    if (row.id !== rowId) return row;
+      const updated = { ...row, [field]: value };
 
-    const updatedRow = { ...row, [field]: value };
+      if (field === 'fecha') {
+        updated.mes = getMonthFromDate(value);
+        updated.dia = getDayFromDate(value);
+      }
 
-    if (field === 'fecha') {
-      updatedRow.mes = getMonthFromDate(value);
-      updatedRow.dia = getDayFromDate(value);
-    }
+      return updated;
+    });
 
-    return updatedRow;
-  });
+    saveTableDataForTab(tabId, nextRows);
 
-  set({
-    tableData: {
-      ...state.tableData,
-      [tabId]: nextRows,
-    },
-  });
-
-  supabase.from('sales').upsert(
-    {
-      id: tabId,
+    supabase.from('sales').upsert({
       tab: tabId,
       data: nextRows,
-    },
-    { onConflict: 'id' }
-  );
-},
+    });
+
+    return {
+      tableData: {
+        ...state.tableData,
+        [tabId]: nextRows,
+      },
+    };
+  }),
+
   toggleDarkMode: () =>
     set((state) => {
       const ui = { darkMode: !state.ui.darkMode };

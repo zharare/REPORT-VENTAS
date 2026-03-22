@@ -37,42 +37,45 @@ export const DashboardShell = () => {
     deleteRow,
   } = useCrmStore();
 
-  // 🔹 carga local
+  // ✅ 1. HIDRATAR LOCAL STORAGE (CLAVE)
   useEffect(() => {
     if (mounted && !hydrated) {
       hydrateFromStorage();
     }
   }, [mounted, hydrated, hydrateFromStorage]);
 
-  // 🔥 carga desde Supabase
+  // ✅ 2. CARGAR DESDE SUPABASE
   useEffect(() => {
-  const loadFromSupabase = async () => {
-    const { data, error } = await supabase.from('sales').select('*');
+    const loadFromSupabase = async () => {
+      const { data, error } = await supabase.from('sales').select('*');
 
-    if (error) {
-      console.log('❌ Error:', error);
-      return;
-    }
+      if (error) {
+        console.log('❌ Error:', error);
+        return;
+      }
 
-    if (data) {
+      if (!data || data.length === 0) return;
+
       const formatted: Record<string, any[]> = {};
 
-data.forEach((item) => {
-  formatted[item.tab] = item.data;
-});
+      data.forEach((item) => {
+        formatted[item.tab] = item.data;
+      });
 
-useCrmStore.setState({
-  tableData: formatted,
-});
+      useCrmStore.setState({
+        tableData: formatted,
+      });
 
-      console.log('🔥 Datos cargados:', formatted);
-    }
-  };
+      console.log('🔥 Datos cargados desde Supabase');
+    };
 
-  loadFromSupabase();
-}, []);
+    loadFromSupabase();
+  }, []);
 
-  const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0];
+  // ✅ 3. PROTECCIÓN ANTI-CRASH
+  const activeTab =
+    tabs.find((tab) => tab.id === activeTabId) || tabs[0] || null;
+
   const activeRows = activeTab ? tableData[activeTab.id] ?? [] : [];
 
   const filteredRows = useMemo(
@@ -95,6 +98,7 @@ useCrmStore.setState({
     [tabs, tableData]
   );
 
+  // ✅ 4. BLOQUEO DE RENDER SEGURO
   if (!mounted || !hydrated || !activeTab) {
     return <div className="min-h-screen bg-surface" />;
   }
